@@ -144,7 +144,8 @@ section h2 { font-size: 16px; margin-bottom: 10px; }
 .ghost-btn:hover { background: var(--border); }
 .ghost-btn.small { padding: 4px 8px; font-size: 11px; }
 
-.backup-controls { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+.backup-controls { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.sync-indicator { margin-top: 12px; margin-bottom: 0; }
 
 .log-form { display: flex; gap: 8px; margin-top: 10px; }
 .log-form input {

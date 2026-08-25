@@ -11,6 +11,15 @@ const TABS = [
   { id: 'calendario', label: 'Calendario' },
 ]
 
+function SyncIndicator({ status }) {
+  const label = {
+    loading: '⏳ Conectando al servidor…',
+    ok: '🟢 Guardado en el servidor',
+    error: '🔴 Sin conexión al backend (¿corriste "docker compose up"?)',
+  }[status]
+  return <p className="muted small sync-indicator">{label}</p>
+}
+
 function BackupControls({ state, importState }) {
   const fileInput = useRef(null)
 
@@ -53,6 +62,7 @@ export default function App() {
   const [tab, setTab] = useState('hoy')
   const {
     state,
+    syncStatus,
     logHours,
     toggleRequirement,
     markBookCompleted,
@@ -90,6 +100,7 @@ export default function App() {
             <div className="progress-fill" style={{ width: `${Math.min(100, Math.round((elapsed / totalDays) * 100))}%` }} />
           </div>
           <p className="muted small">Semana {Math.ceil(elapsed / 7)} de ~{Math.ceil(totalDays / 7)}</p>
+          <SyncIndicator status={syncStatus} />
           <BackupControls state={state} importState={importState} />
         </div>
       </aside>

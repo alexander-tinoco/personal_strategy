@@ -1,39 +1,52 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { todayISO } from './dates.js'
 
-const KEY = 'roadmap-2026-state-v1'
-
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 const EMPTY = { loggedHours: {}, checkedRequirements: {}, completedBooks: {}, completedProjects: {} }
 
-function load() {
-  try {
-    const raw = localStorage.getItem(KEY)
-    if (!raw) return { ...EMPTY }
-    const parsed = JSON.parse(raw)
-    return {
-      loggedHours: parsed.loggedHours || {},
-      checkedRequirements: parsed.checkedRequirements || {},
-      completedBooks: parsed.completedBooks || {},
-      completedProjects: parsed.completedProjects || {},
-    }
-  } catch {
-    return { ...EMPTY }
-  }
+async function fetchState() {
+  const res = await fetch(`${API_BASE}/api/state`)
+  if (!res.ok) throw new Error('No se pudo leer el progreso del servidor.')
+  return res.json()
 }
 
-function save(state) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(state))
-  } catch {
-    // localStorage no disponible: el progreso no persiste en esta sesión.
-  }
+async function saveState(state) {
+  const res = await fetch(`${API_BASE}/api/state`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(state),
+  })
+  if (!res.ok) throw new Error('No se pudo guardar el progreso en el servidor.')
 }
 
 export function useLocalState() {
-  const [state, setState] = useState(load)
+  const [state, setState] = useState(EMPTY)
+  const [syncStatus, setSyncStatus] = useState('loading') // 'loading' | 'ok' | 'error'
+  const loaded = useRef(false)
 
   useEffect(() => {
-    save(state)
+    fetchState()
+      .then((data) => {
+        setState({ ...EMPTY, ...data })
+        setSyncStatus('ok')
+      })
+      .catch((err) => {
+        console.error(err)
+        setSyncStatus('error')
+      })
+      .finally(() => {
+        loaded.current = true
+      })
+  }, [])
+
+  useEffect(() => {
+    if (!loaded.current) return
+    saveState(state)
+      .then(() => setSyncStatus('ok'))
+      .catch((err) => {
+        console.error(err)
+        setSyncStatus('error')
+      })
   }, [state])
 
   function logHours(bookId, deltaHours) {
@@ -99,6 +112,7 @@ export function useLocalState() {
 
   return {
     state,
+    syncStatus,
     logHours,
     toggleRequirement,
     markBookCompleted,
