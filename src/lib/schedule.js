@@ -5,13 +5,6 @@ export function activeCerts(dateISO) {
   return certs.filter((c) => isBetween(dateISO, c.start, c.end))
 }
 
-// Ritmo planeado (horas/día) si se reparte el total de horas del libro
-// en partes iguales a lo largo de su ventana ORIGINAL (la del roadmap).
-export function plannedDailyPace(book) {
-  if (book.hours == null) return null
-  return book.hours / daysInclusive(book.start, book.end)
-}
-
 // Ritmo real necesario: horas restantes / días restantes hasta endISO.
 export function liveDailyPace(remainingHours, dateISO, endISO) {
   if (remainingHours == null) return null
@@ -23,18 +16,6 @@ export function remainingHoursFor(book, loggedHours) {
   if (book.hours == null) return null
   const logged = loggedHours[book.id] || 0
   return Math.max(0, book.hours - logged)
-}
-
-export function bookById(id) {
-  return books.find((b) => b.id === id)
-}
-
-export function projectFor(bookId) {
-  return projects.find((p) => p.bookId === bookId)
-}
-
-export function projectForCert(certId) {
-  return projects.find((p) => p.certId === certId)
 }
 
 // --- Motor de re-programación dinámica ---
@@ -133,10 +114,6 @@ export function buildProjectSchedule(completedProjects = {}, dateISO = todayISO(
   return [...chained, ...alone]
     .sort((a, b) => a.item.order - b.item.order)
     .map((e) => ({ ...e, project: e.item }))
-}
-
-export function scheduleEntryFor(id, schedule) {
-  return schedule.find((e) => e.item.id === id)
 }
 
 export function activeEntriesOn(dateISO, schedule) {

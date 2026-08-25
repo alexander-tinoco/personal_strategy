@@ -1,35 +1,65 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { todayISO, daysInclusive } from './lib/dates.js'
 import { useLocalState } from './lib/state.js'
 import { periodEnd, periodStart } from './data/roadmap.js'
 import Today from './components/Today.jsx'
 import Calendar from './components/Calendar.jsx'
-import Books from './components/Books.jsx'
-import Projects from './components/Projects.jsx'
-import Certifications from './components/Certifications.jsx'
-import RoadmapDoc from './components/RoadmapDoc.jsx'
 import { buildBookSchedule, buildProjectSchedule } from './lib/schedule.js'
 
 const TABS = [
   { id: 'hoy', label: 'Hoy' },
   { id: 'calendario', label: 'Calendario' },
-  { id: 'libros', label: 'Libros' },
-  { id: 'proyectos', label: 'Proyectos' },
-  { id: 'certs', label: 'Certificaciones' },
-  { id: 'roadmap', label: 'Roadmap original' },
 ]
+
+function BackupControls({ state, importState }) {
+  const fileInput = useRef(null)
+
+  function handleExport() {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `roadmap-2026-backup-${todayISO()}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  function handleImportFile(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result)
+        importState(parsed)
+      } catch {
+        alert('El archivo no es un backup válido.')
+      }
+    }
+    reader.readAsText(file)
+    e.target.value = ''
+  }
+
+  return (
+    <div className="backup-controls">
+      <button className="ghost-btn small" onClick={handleExport}>⬇ Exportar backup</button>
+      <button className="ghost-btn small" onClick={() => fileInput.current?.click()}>⬆ Importar backup</button>
+      <input ref={fileInput} type="file" accept="application/json" hidden onChange={handleImportFile} />
+    </div>
+  )
+}
 
 export default function App() {
   const [tab, setTab] = useState('hoy')
   const {
     state,
     logHours,
-    setHours,
     toggleRequirement,
     markBookCompleted,
     unmarkBookCompleted,
     markProjectCompleted,
     unmarkProjectCompleted,
+    importState,
   } = useLocalState()
   const dateISO = todayISO()
   const totalDays = daysInclusive(periodStart, periodEnd)
@@ -60,6 +90,7 @@ export default function App() {
             <div className="progress-fill" style={{ width: `${Math.min(100, Math.round((elapsed / totalDays) * 100))}%` }} />
           </div>
           <p className="muted small">Semana {Math.ceil(elapsed / 7)} de ~{Math.ceil(totalDays / 7)}</p>
+          <BackupControls state={state} importState={importState} />
         </div>
       </aside>
       <main className="content">
@@ -81,6 +112,7 @@ export default function App() {
             state={state}
             bookSchedule={bookSchedule}
             projectSchedule={projectSchedule}
+            logHours={logHours}
             toggleRequirement={toggleRequirement}
             markBookCompleted={markBookCompleted}
             unmarkBookCompleted={unmarkBookCompleted}
@@ -88,27 +120,6 @@ export default function App() {
             unmarkProjectCompleted={unmarkProjectCompleted}
           />
         )}
-        {tab === 'libros' && (
-          <Books
-            state={state}
-            dateISO={dateISO}
-            bookSchedule={bookSchedule}
-            setHours={setHours}
-            markBookCompleted={markBookCompleted}
-            unmarkBookCompleted={unmarkBookCompleted}
-          />
-        )}
-        {tab === 'proyectos' && (
-          <Projects
-            state={state}
-            projectSchedule={projectSchedule}
-            toggleRequirement={toggleRequirement}
-            markProjectCompleted={markProjectCompleted}
-            unmarkProjectCompleted={unmarkProjectCompleted}
-          />
-        )}
-        {tab === 'certs' && <Certifications />}
-        {tab === 'roadmap' && <RoadmapDoc />}
       </main>
     </div>
   )

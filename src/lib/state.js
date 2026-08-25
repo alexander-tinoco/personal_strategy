@@ -46,13 +46,6 @@ export function useLocalState() {
     }))
   }
 
-  function setHours(bookId, totalHours) {
-    setState((prev) => ({
-      ...prev,
-      loggedHours: { ...prev.loggedHours, [bookId]: Math.max(0, totalHours) },
-    }))
-  }
-
   function toggleRequirement(key) {
     setState((prev) => ({
       ...prev,
@@ -95,14 +88,23 @@ export function useLocalState() {
     })
   }
 
+  function importState(next) {
+    setState({
+      loggedHours: next.loggedHours || {},
+      checkedRequirements: next.checkedRequirements || {},
+      completedBooks: next.completedBooks || {},
+      completedProjects: next.completedProjects || {},
+    })
+  }
+
   return {
     state,
     logHours,
-    setHours,
     toggleRequirement,
     markBookCompleted,
     unmarkBookCompleted,
     markProjectCompleted,
     unmarkProjectCompleted,
+    importState,
   }
 }

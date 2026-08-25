@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { monthKey, addMonths, monthLabel, buildMonthGrid, todayISO, formatHuman, formatHours } from '../lib/dates.js'
 import { certs, periodStart, periodEnd } from '../data/roadmap.js'
 import { activeEntriesOn, activeCerts, remainingHoursFor, liveDailyPace } from '../lib/schedule.js'
+import HoursLogger from './HoursLogger.jsx'
 
 const WEEKDAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 
@@ -67,6 +68,7 @@ function DayDetail({
   projectEntries,
   cts,
   state,
+  logHours,
   toggleRequirement,
   markBookCompleted,
   unmarkBookCompleted,
@@ -111,11 +113,14 @@ function DayDetail({
                 <span className="stat-label">{book.hoursIsRemaining ? 'restantes (hoy)' : 'total'}</span>
               </div>
             </div>
-            {!isCompleted ? (
-              <button className="ghost-btn" onClick={() => markBookCompleted(book.id, iso)}>✓ Terminé este libro este día</button>
-            ) : (
-              <button className="ghost-btn" onClick={() => unmarkBookCompleted(book.id)}>Deshacer</button>
-            )}
+            <div className="row-actions">
+              <HoursLogger book={book} remaining={remaining} onLog={logHours} />
+              {!isCompleted ? (
+                <button className="ghost-btn" onClick={() => markBookCompleted(book.id, iso)}>✓ Terminé este libro este día</button>
+              ) : (
+                <button className="ghost-btn" onClick={() => unmarkBookCompleted(book.id)}>Deshacer</button>
+              )}
+            </div>
           </div>
         )
       })}
@@ -169,6 +174,7 @@ export default function Calendar({
   state,
   bookSchedule,
   projectSchedule,
+  logHours,
   toggleRequirement,
   markBookCompleted,
   unmarkBookCompleted,
@@ -238,6 +244,7 @@ export default function Calendar({
           projectEntries={activeEntriesOn(selected, projectSchedule)}
           cts={activeCerts(selected)}
           state={state}
+          logHours={logHours}
           toggleRequirement={toggleRequirement}
           markBookCompleted={markBookCompleted}
           unmarkBookCompleted={unmarkBookCompleted}
