@@ -20,7 +20,7 @@ const TABS = [
 
 export default function App() {
   const [tab, setTab] = useState('hoy')
-  const { state, logHours, toggleRequirement } = useLocalState()
+  const { state, logHours, setHours, toggleRequirement } = useLocalState()
   const dateISO = todayISO()
   const totalDays = daysInclusive(periodStart, periodEnd)
   const elapsed = daysInclusive(periodStart, dateISO)
@@ -55,7 +55,7 @@ export default function App() {
           <Today dateISO={dateISO} state={state} logHours={logHours} toggleRequirement={toggleRequirement} />
         )}
         {tab === 'calendario' && <Calendar dateISO={dateISO} />}
-        {tab === 'libros' && <Books state={state} />}
+        {tab === 'libros' && <Books state={state} setHours={setHours} />}
         {tab === 'proyectos' && <Projects state={state} toggleRequirement={toggleRequirement} />}
         {tab === 'certs' && <Certifications />}
         {tab === 'roadmap' && <RoadmapDoc />}

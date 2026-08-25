@@ -48,6 +48,38 @@ export function formatShort(iso) {
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
+export function monthKey(iso) {
+  return iso.slice(0, 7)
+}
+
+export function addMonths(yearMonth, n) {
+  const [y, m] = yearMonth.split('-').map(Number)
+  const d = new Date(y, m - 1 + n, 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+export function monthLabel(yearMonth) {
+  const [y, m] = yearMonth.split('-').map(Number)
+  return `${MESES[m - 1]} ${y}`
+}
+
+// Devuelve semanas (arrays de 7) para el mes 'YYYY-MM', empezando en lunes.
+// Los días fuera del mes aparecen como null.
+export function buildMonthGrid(yearMonth) {
+  const [y, m] = yearMonth.split('-').map(Number)
+  const firstWeekday = (new Date(y, m - 1, 1).getDay() + 6) % 7 // lunes=0 .. domingo=6
+  const totalDays = new Date(y, m, 0).getDate()
+
+  const cells = []
+  for (let i = 0; i < firstWeekday; i++) cells.push(null)
+  for (let d = 1; d <= totalDays; d++) cells.push(toISO(new Date(y, m - 1, d)))
+  while (cells.length % 7 !== 0) cells.push(null)
+
+  const weeks = []
+  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7))
+  return weeks
+}
+
 export function formatHours(h) {
   if (h == null) return '—'
   const hours = Math.floor(h)
