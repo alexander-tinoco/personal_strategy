@@ -107,41 +107,49 @@ export const books = [
   },
 ]
 
+// Ritmo diario fijo elegido por el usuario (horas/día). El resto del
+// calendario (fechas de fin de libro/curso, fin de curso estimado) se
+// DERIVA de esto: horas_restantes / ritmo = días que faltan.
+export const dailyBudgets = {
+  reading: 3, // lectura de libros
+  course: 2, // curso de certificación activo
+  dev: 2, // desarrollo del proyecto activo
+}
+
+// order: define el orden de la cadena de cursos (GCP -> Databricks -> Docker+K8s,
+// pedido explícito: Google antes que Databricks). hours: estimación total de horas
+// de estudio (junto con dailyBudgets.course define cuántos días le toma a cada uno).
+// Terraform queda sin order/hours: es opcional y no está paceado.
 export const certs = [
   {
+    id: 'gcp',
+    order: 1,
+    title: 'Google Cloud — Associate Cloud Engineer / Professional Data Engineer',
+    hours: 40,
+    note: 'Va primero por pedido explícito: terminarlo antes que Databricks.',
+    optional: false,
+  },
+  {
     id: 'databricks',
+    order: 2,
     title: 'Databricks Certified Data Engineer Associate',
-    start: '2026-09-01',
-    end: '2026-10-30',
-    examDate: '2026-10-30',
-    note: 'Checkpoint duro: rendir el examen a fin de octubre.',
+    hours: 40,
+    note: 'Self-study: curso + labs + documentación oficial.',
     optional: false,
   },
   {
     id: 'docker-k8s',
+    order: 3,
     title: 'Docker + Kubernetes (curso práctico)',
-    start: '2026-11-01',
-    end: '2026-11-30',
-    examDate: null,
+    hours: 15,
     note: 'Curso práctico, sin examen formal.',
-    optional: false,
-  },
-  {
-    id: 'gcp',
-    title: 'Google Cloud — Associate Cloud Engineer / Professional Data Engineer',
-    start: '2026-11-01',
-    end: '2026-12-29',
-    examDate: '2026-12-29',
-    note: 'Checkpoint duro: rendir el examen a fin de diciembre.',
     optional: false,
   },
   {
     id: 'terraform',
     title: 'HashiCorp Terraform Associate',
-    start: '2026-12-01',
-    end: '2026-12-31',
-    examDate: null,
-    note: 'Opcional, solo si sobra tiempo en diciembre.',
+    hours: null,
+    note: 'Opcional, sin horas asignadas — solo si sobra tiempo después de los otros tres.',
     optional: true,
   },
 ]

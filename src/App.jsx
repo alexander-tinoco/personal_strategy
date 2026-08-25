@@ -4,7 +4,7 @@ import { useLocalState } from './lib/state.js'
 import { periodEnd, periodStart } from './data/roadmap.js'
 import Today from './components/Today.jsx'
 import Calendar from './components/Calendar.jsx'
-import { buildBookSchedule, buildProjectSchedule } from './lib/schedule.js'
+import { buildBookSchedule, buildCourseSchedule, buildProjectSchedule } from './lib/schedule.js'
 
 const TABS = [
   { id: 'hoy', label: 'Hoy' },
@@ -69,12 +69,15 @@ export default function App() {
     unmarkBookCompleted,
     markProjectCompleted,
     unmarkProjectCompleted,
+    markCourseCompleted,
+    unmarkCourseCompleted,
     importState,
   } = useLocalState()
   const dateISO = todayISO()
   const totalDays = daysInclusive(periodStart, periodEnd)
   const elapsed = daysInclusive(periodStart, dateISO)
   const bookSchedule = buildBookSchedule(state.completedBooks, dateISO)
+  const courseSchedule = buildCourseSchedule(state.completedCourses, dateISO)
   const projectSchedule = buildProjectSchedule(state.completedProjects, dateISO)
 
   return (
@@ -110,10 +113,12 @@ export default function App() {
             dateISO={dateISO}
             state={state}
             bookSchedule={bookSchedule}
+            courseSchedule={courseSchedule}
             projectSchedule={projectSchedule}
             logHours={logHours}
             toggleRequirement={toggleRequirement}
             markBookCompleted={markBookCompleted}
+            markCourseCompleted={markCourseCompleted}
             markProjectCompleted={markProjectCompleted}
           />
         )}
@@ -122,11 +127,14 @@ export default function App() {
             dateISO={dateISO}
             state={state}
             bookSchedule={bookSchedule}
+            courseSchedule={courseSchedule}
             projectSchedule={projectSchedule}
             logHours={logHours}
             toggleRequirement={toggleRequirement}
             markBookCompleted={markBookCompleted}
             unmarkBookCompleted={unmarkBookCompleted}
+            markCourseCompleted={markCourseCompleted}
+            unmarkCourseCompleted={unmarkCourseCompleted}
             markProjectCompleted={markProjectCompleted}
             unmarkProjectCompleted={unmarkProjectCompleted}
           />

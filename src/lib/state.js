@@ -2,7 +2,13 @@ import { useState, useEffect, useRef } from 'react'
 import { todayISO } from './dates.js'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000'
-const EMPTY = { loggedHours: {}, checkedRequirements: {}, completedBooks: {}, completedProjects: {} }
+const EMPTY = {
+  loggedHours: {},
+  checkedRequirements: {},
+  completedBooks: {},
+  completedProjects: {},
+  completedCourses: {},
+}
 
 async function fetchState() {
   const res = await fetch(`${API_BASE}/api/state`)
@@ -101,12 +107,28 @@ export function useLocalState() {
     })
   }
 
+  function markCourseCompleted(courseId, dateISO = todayISO()) {
+    setState((prev) => ({
+      ...prev,
+      completedCourses: { ...prev.completedCourses, [courseId]: dateISO },
+    }))
+  }
+
+  function unmarkCourseCompleted(courseId) {
+    setState((prev) => {
+      const next = { ...prev.completedCourses }
+      delete next[courseId]
+      return { ...prev, completedCourses: next }
+    })
+  }
+
   function importState(next) {
     setState({
       loggedHours: next.loggedHours || {},
       checkedRequirements: next.checkedRequirements || {},
       completedBooks: next.completedBooks || {},
       completedProjects: next.completedProjects || {},
+      completedCourses: next.completedCourses || {},
     })
   }
 
@@ -119,6 +141,8 @@ export function useLocalState() {
     unmarkBookCompleted,
     markProjectCompleted,
     unmarkProjectCompleted,
+    markCourseCompleted,
+    unmarkCourseCompleted,
     importState,
   }
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { monthKey, addMonths, monthLabel, buildMonthGrid, todayISO, formatHuman, formatHours } from '../lib/dates.js'
-import { certs, periodStart, periodEnd } from '../data/roadmap.js'
-import { activeEntriesOn, activeCerts, remainingHoursFor, liveDailyPace } from '../lib/schedule.js'
+import { periodStart, periodEnd, dailyBudgets } from '../data/roadmap.js'
+import { activeEntriesOn, remainingHoursFor, todaysTarget } from '../lib/schedule.js'
 import HoursLogger from './HoursLogger.jsx'
 
 const WEEKDAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
@@ -16,6 +16,12 @@ const SHORT_BOOK = {
   ddia: 'DDIA',
   'data-engineering-fundamentals': 'Data Eng.',
   'designing-ml-systems': 'ML Systems',
+}
+
+const SHORT_COURSE = {
+  gcp: 'Curso: GCP',
+  databricks: 'Curso: Databricks',
+  'docker-k8s': 'Curso: Docker+K8s',
 }
 
 const SHORT_PROJECT = {
@@ -33,11 +39,12 @@ const SHORT_PROJECT = {
   'gcp-deploy': 'Proy: GCP',
 }
 
-function DayCell({ iso, bookEntries, projectEntries, exam, isSelected, onSelect }) {
+function DayCell({ iso, bookEntries, courseEntries, projectEntries, isSelected, onSelect }) {
   if (!iso) return <td className="cal-cell empty" />
   const today = iso === todayISO()
   const inWindow = iso >= periodStart && iso <= periodEnd
   const dayNum = Number(iso.slice(8, 10))
+  const examToday = courseEntries.find((e) => e.dynEnd === iso)
 
   return (
     <td
@@ -51,12 +58,17 @@ function DayCell({ iso, bookEntries, projectEntries, exam, isSelected, onSelect 
             {SHORT_BOOK[book.id] || book.title}
           </span>
         ))}
+        {courseEntries.map(({ cert, isCompleted, isOverdue }) => (
+          <span key={cert.id} className={`cal-tag cal-course${isCompleted ? ' cal-done' : ''}${isOverdue ? ' cal-overdue' : ''}`}>
+            {SHORT_COURSE[cert.id] || cert.title}
+          </span>
+        ))}
         {projectEntries.map(({ project, isCompleted, isOverdue }) => (
           <span key={project.id} className={`cal-tag cal-project${isCompleted ? ' cal-done' : ''}${isOverdue ? ' cal-overdue' : ''}`}>
             {SHORT_PROJECT[project.id] || project.title}
           </span>
         ))}
-        {exam && <span className="cal-tag cal-exam">🎯 Examen {exam.title.split(' ')[0]}</span>}
+        {examToday && <span className="cal-tag cal-exam">🎯 Fin curso: {SHORT_COURSE[examToday.cert.id]}</span>}
       </div>
     </td>
   )
@@ -65,13 +77,15 @@ function DayCell({ iso, bookEntries, projectEntries, exam, isSelected, onSelect 
 function DayDetail({
   iso,
   bookEntries,
+  courseEntries,
   projectEntries,
-  cts,
   state,
   logHours,
   toggleRequirement,
   markBookCompleted,
   unmarkBookCompleted,
+  markCourseCompleted,
+  unmarkCourseCompleted,
   markProjectCompleted,
   unmarkProjectCompleted,
   onClose,
@@ -83,13 +97,13 @@ function DayDetail({
         <button className="ghost-btn" onClick={onClose}>Cerrar ✕</button>
       </div>
 
-      {bookEntries.length === 0 && projectEntries.length === 0 && cts.length === 0 && (
+      {bookEntries.length === 0 && courseEntries.length === 0 && projectEntries.length === 0 && (
         <p className="muted">No hay nada planeado para este día.</p>
       )}
 
-      {bookEntries.map(({ book, dynEnd, isCompleted, isOverdue }) => {
+      {bookEntries.map(({ book, isCompleted, isOverdue }) => {
         const remaining = remainingHoursFor(book, state.loggedHours)
-        const pace = liveDailyPace(remaining, iso, dynEnd)
+        const target = todaysTarget(remaining, dailyBudgets.reading)
         return (
           <div className="card" key={book.id}>
             <div className="card-title-row">
@@ -97,12 +111,12 @@ function DayDetail({
               <span className="tag">{book.author}</span>
             </div>
             <p className="muted">{book.why}</p>
-            {isOverdue && <p className="note warn">⚠ Atrasado respecto al plan original.</p>}
+            {isOverdue && <p className="note warn">⚠ Atrasado respecto al ritmo de {dailyBudgets.reading}h/día.</p>}
             {isCompleted && <p className="note ok">✓ Marcado como terminado.</p>}
             <div className="stat-row">
               <div>
-                <span className="stat-value">{formatHours(pace)}</span>
-                <span className="stat-label">ritmo ese día</span>
+                <span className="stat-value">{formatHours(target)}</span>
+                <span className="stat-label">meta ese día</span>
               </div>
               <div>
                 <span className="stat-value">{formatHours(remaining)}</span>
@@ -119,6 +133,41 @@ function DayDetail({
                 <button className="ghost-btn" onClick={() => markBookCompleted(book.id, iso)}>✓ Terminé este libro este día</button>
               ) : (
                 <button className="ghost-btn" onClick={() => unmarkBookCompleted(book.id)}>Deshacer</button>
+              )}
+            </div>
+          </div>
+        )
+      })}
+
+      {courseEntries.map(({ cert, isCompleted, isOverdue }) => {
+        const remaining = remainingHoursFor(cert, state.loggedHours)
+        const target = todaysTarget(remaining, dailyBudgets.course)
+        return (
+          <div className="card" key={cert.id}>
+            <h3>{cert.title}</h3>
+            <p className="muted">{cert.note}</p>
+            {isOverdue && <p className="note warn">⚠ Atrasado respecto al ritmo de {dailyBudgets.course}h/día.</p>}
+            {isCompleted && <p className="note ok">✓ Marcado como terminado.</p>}
+            <div className="stat-row">
+              <div>
+                <span className="stat-value">{formatHours(target)}</span>
+                <span className="stat-label">meta ese día</span>
+              </div>
+              <div>
+                <span className="stat-value">{formatHours(remaining)}</span>
+                <span className="stat-label">restantes</span>
+              </div>
+              <div>
+                <span className="stat-value">{formatHours(cert.hours)}</span>
+                <span className="stat-label">total</span>
+              </div>
+            </div>
+            <div className="row-actions">
+              <HoursLogger book={cert} remaining={remaining} onLog={logHours} />
+              {!isCompleted ? (
+                <button className="ghost-btn" onClick={() => markCourseCompleted(cert.id, iso)}>✓ Terminé este curso este día</button>
+              ) : (
+                <button className="ghost-btn" onClick={() => unmarkCourseCompleted(cert.id)}>Deshacer</button>
               )}
             </div>
           </div>
@@ -157,14 +206,6 @@ function DayDetail({
           </div>
         )
       })}
-
-      {cts.map((c) => (
-        <div className="card" key={c.id}>
-          <h3>{c.title}</h3>
-          <p className="muted">{c.note}</p>
-          {c.examDate && <p className="tag">Examen: {formatHuman(c.examDate)}</p>}
-        </div>
-      ))}
     </div>
   )
 }
@@ -173,11 +214,14 @@ export default function Calendar({
   dateISO,
   state,
   bookSchedule,
+  courseSchedule,
   projectSchedule,
   logHours,
   toggleRequirement,
   markBookCompleted,
   unmarkBookCompleted,
+  markCourseCompleted,
+  unmarkCourseCompleted,
   markProjectCompleted,
   unmarkProjectCompleted,
 }) {
@@ -191,7 +235,7 @@ export default function Calendar({
     <div className="view">
       <header className="view-header">
         <h1>Calendario</h1>
-        <p className="muted">Hacé clic en un día para ver el detalle y marcar avances. Si terminás un libro o proyecto antes o después, el resto del calendario se recorre solo.</p>
+        <p className="muted">Hacé clic en un día para ver el detalle y marcar avances. Si terminás un libro, curso o proyecto antes o después, el resto del calendario se recorre solo.</p>
       </header>
 
       <div className="cal-nav">
@@ -217,8 +261,8 @@ export default function Calendar({
                     key={iso || `empty-${i}-${j}`}
                     iso={iso}
                     bookEntries={iso ? activeEntriesOn(iso, bookSchedule) : []}
+                    courseEntries={iso ? activeEntriesOn(iso, courseSchedule) : []}
                     projectEntries={iso ? activeEntriesOn(iso, projectSchedule) : []}
-                    exam={iso ? certs.find((c) => c.examDate === iso) : null}
                     isSelected={iso === selected}
                     onSelect={setSelected}
                   />
@@ -233,21 +277,24 @@ export default function Calendar({
         {bookSchedule.map(({ book }) => (
           <span key={book.id} className={`cal-tag cal-book-${book.order}`}>{SHORT_BOOK[book.id] || book.title}</span>
         ))}
+        <span className="cal-tag cal-course">Curso</span>
         <span className="cal-tag cal-project">Proyecto</span>
-        <span className="cal-tag cal-exam">🎯 Examen</span>
+        <span className="cal-tag cal-exam">🎯 Fin de curso</span>
       </div>
 
       {selected && (
         <DayDetail
           iso={selected}
           bookEntries={activeEntriesOn(selected, bookSchedule)}
+          courseEntries={activeEntriesOn(selected, courseSchedule)}
           projectEntries={activeEntriesOn(selected, projectSchedule)}
-          cts={activeCerts(selected)}
           state={state}
           logHours={logHours}
           toggleRequirement={toggleRequirement}
           markBookCompleted={markBookCompleted}
           unmarkBookCompleted={unmarkBookCompleted}
+          markCourseCompleted={markCourseCompleted}
+          unmarkCourseCompleted={unmarkCourseCompleted}
           markProjectCompleted={markProjectCompleted}
           unmarkProjectCompleted={unmarkProjectCompleted}
           onClose={() => setSelected(null)}
