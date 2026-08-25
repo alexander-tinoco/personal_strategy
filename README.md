@@ -4,22 +4,17 @@ App local tipo Notion para seguir el [roadmap de estudio ago–dic 2026](docs/ro
 
 ## Uso
 
-1. Levantar la base de datos + API (Postgres en Docker, con volumen persistente):
+Todo (frontend + API + Postgres) se levanta con un solo comando:
 
-   ```bash
-   docker compose up -d
-   ```
+```bash
+docker compose up -d
+```
 
-2. Levantar el frontend:
-
-   ```bash
-   npm install
-   npm run dev
-   ```
-
-Abre la URL que muestra Vite (por defecto `http://localhost:5173`). El backend escucha en `http://localhost:4000`; si querés apuntar el frontend a otra URL, definí `VITE_API_URL` antes de `npm run dev`.
+Abrí `http://localhost:5173`. La API queda en `http://localhost:4000`. El frontend corre con hot-reload (el código fuente está montado como volumen dentro del contenedor `web`), así que podés seguir editando archivos en `src/` normalmente y se recargan solos.
 
 Para apagar todo: `docker compose down` (esto NO borra los datos, viven en el volumen `roadmap_db_data`). Solo se perderían con `docker compose down -v`.
+
+Si preferís correr el frontend fuera de Docker (por ejemplo para depurar con más herramientas locales), podés seguir usando `npm install && npm run dev` mientras `docker compose up -d db api` esté corriendo — apuntará a `http://localhost:4000` por defecto.
 
 ## Qué hace
 
