@@ -25,6 +25,10 @@ export function remainingHoursFor(book, loggedHours) {
   return Math.max(0, book.hours - logged)
 }
 
+export function bookById(id) {
+  return books.find((b) => b.id === id)
+}
+
 export function projectFor(bookId) {
   return projects.find((p) => p.bookId === bookId)
 }
@@ -33,24 +37,20 @@ export function projectForCert(certId) {
   return projects.find((p) => p.certId === certId)
 }
 
-export function bookById(id) {
-  return books.find((b) => b.id === id)
-}
+// --- Motor de re-programación dinámica ---
+// Encadena una lista de items (ordenados por `order`) uno detrás del otro:
+// si marcás uno como terminado antes de lo planeado, el siguiente arranca
+// antes (todo lo que sigue se adelanta); si te atrasás, empuja a los
+// siguientes. `completedMap` es { id: fechaISOenQueLoTerminaste }.
+function chainSequential(items, completedMap, dateISO) {
+  const sorted = [...items].sort((a, b) => a.order - b.order)
+  let cursor = sorted[0]?.start
+  const out = []
 
-// --- Programación dinámica de los 9 libros (y su proyecto 1:1) ---
-// Se leen en orden encadenado: si terminás uno antes de lo planeado, el
-// siguiente arranca antes (se "adelanta" todo lo que viene después); si te
-// atrasás, empuja a los siguientes. Las certificaciones (Databricks/GCP/
-// Docker+K8s) corren en paralelo y mantienen su ventana fija del roadmap.
-export function buildDynamicSchedule(completedBooks = {}, dateISO = todayISO()) {
-  const sorted = [...books].sort((a, b) => a.order - b.order)
-  let cursor = sorted[0].start
-  const schedule = []
-
-  for (const book of sorted) {
-    const plannedDays = daysInclusive(book.start, book.end)
+  for (const item of sorted) {
+    const plannedDays = daysInclusive(item.start, item.end)
     const dynStart = cursor
-    const completedOn = completedBooks[book.id] || null
+    const completedOn = completedMap[item.id] || null
     let dynEnd
     let isOverdue = false
 
@@ -66,8 +66,8 @@ export function buildDynamicSchedule(completedBooks = {}, dateISO = todayISO()) 
       }
     }
 
-    schedule.push({
-      book,
+    out.push({
+      item,
       dynStart,
       dynEnd,
       plannedDays,
@@ -76,36 +76,69 @@ export function buildDynamicSchedule(completedBooks = {}, dateISO = todayISO()) 
       isOverdue,
       inProgress: !completedOn && dateISO >= dynStart && dateISO <= dynEnd,
       isPending: dateISO < dynStart,
-      shiftedFromPlan: dynStart !== book.start,
+      shiftedFromPlan: dynStart !== item.start,
     })
 
     cursor = addDays(dynEnd, 1)
   }
 
-  return schedule
+  return out
 }
 
-export function scheduleEntryFor(bookId, schedule) {
-  return schedule.find((e) => e.book.id === bookId)
-}
+// Item con ventana propia fija (no se encadena con otros): solo se acorta
+// si lo marcás terminado antes, o se extiende hasta hoy si te atrasás.
+function standaloneEntry(item, completedMap, dateISO) {
+  const dynStart = item.start
+  const completedOn = completedMap[item.id] || null
+  let dynEnd
+  let isOverdue = false
 
-export function activeScheduleEntries(dateISO, schedule) {
-  return schedule.filter((e) => dateISO >= e.dynStart && dateISO <= e.dynEnd)
-}
-
-// Ventana dinámica de un proyecto: si está atado a un libro, hereda su
-// ventana dinámica; si está atado a una certificación, usa la ventana fija.
-export function projectWindow(project, schedule) {
-  if (project.bookId) {
-    const entry = scheduleEntryFor(project.bookId, schedule)
-    if (entry) return { start: entry.dynStart, end: entry.dynEnd }
+  if (completedOn) {
+    dynEnd = completedOn < dynStart ? dynStart : completedOn
+  } else if (dateISO > item.end) {
+    dynEnd = dateISO
+    isOverdue = true
+  } else {
+    dynEnd = item.end
   }
-  return { start: project.start, end: project.end }
+
+  return {
+    item,
+    dynStart,
+    dynEnd,
+    plannedDays: daysInclusive(item.start, item.end),
+    isCompleted: !!completedOn,
+    completedOn,
+    isOverdue,
+    inProgress: !completedOn && dateISO >= dynStart && dateISO <= dynEnd,
+    isPending: dateISO < dynStart,
+    shiftedFromPlan: false,
+  }
 }
 
-export function activeProjectsOn(dateISO, schedule) {
-  return projects.filter((p) => {
-    const w = projectWindow(p, schedule)
-    return isBetween(dateISO, w.start, w.end)
-  })
+// Los 9 libros se leen uno detrás de otro: se encadenan.
+export function buildBookSchedule(completedBooks = {}, dateISO = todayISO()) {
+  return chainSequential(books, completedBooks, dateISO).map((e) => ({ ...e, book: e.item }))
+}
+
+// Los 9 proyectos de libro se encadenan entre sí (igual que los libros, pero
+// de forma independiente: un proyecto puede tardar más o menos que su
+// lectura). Los 3 proyectos de certificación corren en paralelo, cada uno
+// con su propia ventana fija.
+export function buildProjectSchedule(completedProjects = {}, dateISO = todayISO()) {
+  const sequential = projects.filter((p) => p.bookId)
+  const standalone = projects.filter((p) => p.certId)
+  const chained = chainSequential(sequential, completedProjects, dateISO)
+  const alone = standalone.map((p) => standaloneEntry(p, completedProjects, dateISO))
+  return [...chained, ...alone]
+    .sort((a, b) => a.item.order - b.item.order)
+    .map((e) => ({ ...e, project: e.item }))
+}
+
+export function scheduleEntryFor(id, schedule) {
+  return schedule.find((e) => e.item.id === id)
+}
+
+export function activeEntriesOn(dateISO, schedule) {
+  return schedule.filter((e) => dateISO >= e.dynStart && dateISO <= e.dynEnd)
 }

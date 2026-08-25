@@ -150,6 +150,7 @@ export const certs = [
 export const projects = [
   {
     id: 'rag-assistant',
+    order: 1,
     bookId: 'ai-engineering',
     title: 'Asistente RAG sobre documentos propios',
     objetivo: 'Aplicar conceptos de evaluación, retrieval, prompting y arquitectura de sistemas con LLMs.',
@@ -166,6 +167,7 @@ export const projects = [
   },
   {
     id: 'refactor-project',
+    order: 2,
     bookId: 'clean-code',
     title: 'Refactor de un proyecto propio existente',
     objetivo: 'Practicar nombres significativos, funciones pequeñas, eliminación de duplicación y código auto-explicativo.',
@@ -181,6 +183,7 @@ export const projects = [
   },
   {
     id: 'cli-tool',
+    order: 3,
     bookId: 'pragmatic-programmer',
     title: 'CLI tool con buenas prácticas',
     objetivo: 'Aplicar DRY, "tracer bullets", manejo de errores y automatización.',
@@ -196,6 +199,7 @@ export const projects = [
   },
   {
     id: 'layered-app',
+    order: 4,
     bookId: 'clean-architecture',
     title: 'Reestructurar una app en capas',
     objetivo: 'Entender la independencia de frameworks y la regla de dependencia.',
@@ -210,6 +214,7 @@ export const projects = [
   },
   {
     id: 'adr-prototype',
+    order: 5,
     bookId: 'hard-parts',
     title: 'Documento de decisión arquitectónica (ADR) + prototipo',
     objetivo: 'Practicar el razonamiento de trade-offs arquitectónicos.',
@@ -223,6 +228,7 @@ export const projects = [
   },
   {
     id: 'microservices-split',
+    order: 6,
     bookId: 'building-microservices',
     title: 'Descomponer el monolito en 2-3 microservicios',
     objetivo: 'Aplicar boundaries de servicio, comunicación y despliegue independiente.',
@@ -238,6 +244,7 @@ export const projects = [
   },
   {
     id: 'replication-pipeline',
+    order: 7,
     bookId: 'ddia',
     title: 'Pipeline con replicación/particionamiento',
     objetivo: 'Ver en la práctica consistencia, replicación y trade-offs de latencia/disponibilidad.',
@@ -251,6 +258,7 @@ export const projects = [
   },
   {
     id: 'etl-pipeline',
+    order: 8,
     bookId: 'data-engineering-fundamentals',
     title: 'Pipeline ETL/ELT orquestado',
     objetivo: 'Aplicar el ciclo de vida de datos completo: ingestión, transformación, almacenamiento, orquestación.',
@@ -266,6 +274,7 @@ export const projects = [
   },
   {
     id: 'ml-serving',
+    order: 9,
     bookId: 'designing-ml-systems',
     title: 'Modelo servido en producción con monitoreo',
     objetivo: 'Aplicar feature pipeline, serving, versionado de modelo y monitoreo básico de drift/performance.',
@@ -281,6 +290,7 @@ export const projects = [
   },
   {
     id: 'databricks-pipeline',
+    order: 10,
     certId: 'databricks',
     title: 'Pipeline de datos en Databricks',
     objetivo: 'Practicar Spark, Delta Lake, orquestación de jobs y buenas prácticas de la certificación.',
@@ -294,6 +304,7 @@ export const projects = [
   },
   {
     id: 'k8s-deploy',
+    order: 11,
     certId: 'docker-k8s',
     title: 'Contenerizar y orquestar los microservicios',
     objetivo: 'Practicar contenerización real, manifiestos de despliegue, servicios y escalado básico.',
@@ -308,6 +319,7 @@ export const projects = [
   },
   {
     id: 'gcp-deploy',
+    order: 12,
     certId: 'gcp',
     title: 'Despliegue de un componente en GCP',
     objetivo: 'Practicar servicios clave según la ruta elegida (BigQuery, Cloud Run, Dataflow, o IAM/Compute).',

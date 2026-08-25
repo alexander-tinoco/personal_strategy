@@ -8,7 +8,7 @@ import Books from './components/Books.jsx'
 import Projects from './components/Projects.jsx'
 import Certifications from './components/Certifications.jsx'
 import RoadmapDoc from './components/RoadmapDoc.jsx'
-import { buildDynamicSchedule } from './lib/schedule.js'
+import { buildBookSchedule, buildProjectSchedule } from './lib/schedule.js'
 
 const TABS = [
   { id: 'hoy', label: 'Hoy' },
@@ -21,11 +21,21 @@ const TABS = [
 
 export default function App() {
   const [tab, setTab] = useState('hoy')
-  const { state, logHours, setHours, toggleRequirement, markBookCompleted, unmarkBookCompleted } = useLocalState()
+  const {
+    state,
+    logHours,
+    setHours,
+    toggleRequirement,
+    markBookCompleted,
+    unmarkBookCompleted,
+    markProjectCompleted,
+    unmarkProjectCompleted,
+  } = useLocalState()
   const dateISO = todayISO()
   const totalDays = daysInclusive(periodStart, periodEnd)
   const elapsed = daysInclusive(periodStart, dateISO)
-  const schedule = buildDynamicSchedule(state.completedBooks, dateISO)
+  const bookSchedule = buildBookSchedule(state.completedBooks, dateISO)
+  const projectSchedule = buildProjectSchedule(state.completedProjects, dateISO)
 
   return (
     <div className="app">
@@ -57,31 +67,46 @@ export default function App() {
           <Today
             dateISO={dateISO}
             state={state}
-            schedule={schedule}
+            bookSchedule={bookSchedule}
+            projectSchedule={projectSchedule}
             logHours={logHours}
             toggleRequirement={toggleRequirement}
             markBookCompleted={markBookCompleted}
+            markProjectCompleted={markProjectCompleted}
           />
         )}
         {tab === 'calendario' && (
           <Calendar
             dateISO={dateISO}
             state={state}
+            bookSchedule={bookSchedule}
+            projectSchedule={projectSchedule}
             toggleRequirement={toggleRequirement}
             markBookCompleted={markBookCompleted}
             unmarkBookCompleted={unmarkBookCompleted}
+            markProjectCompleted={markProjectCompleted}
+            unmarkProjectCompleted={unmarkProjectCompleted}
           />
         )}
         {tab === 'libros' && (
           <Books
             state={state}
             dateISO={dateISO}
+            bookSchedule={bookSchedule}
             setHours={setHours}
             markBookCompleted={markBookCompleted}
             unmarkBookCompleted={unmarkBookCompleted}
           />
         )}
-        {tab === 'proyectos' && <Projects state={state} dateISO={dateISO} toggleRequirement={toggleRequirement} />}
+        {tab === 'proyectos' && (
+          <Projects
+            state={state}
+            projectSchedule={projectSchedule}
+            toggleRequirement={toggleRequirement}
+            markProjectCompleted={markProjectCompleted}
+            unmarkProjectCompleted={unmarkProjectCompleted}
+          />
+        )}
         {tab === 'certs' && <Certifications />}
         {tab === 'roadmap' && <RoadmapDoc />}
       </main>

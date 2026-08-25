@@ -1,14 +1,7 @@
 import { useState } from 'react'
 import { monthKey, addMonths, monthLabel, buildMonthGrid, todayISO, formatHuman, formatHours } from '../lib/dates.js'
 import { certs, periodStart, periodEnd } from '../data/roadmap.js'
-import {
-  buildDynamicSchedule,
-  activeScheduleEntries,
-  activeProjectsOn,
-  activeCerts,
-  remainingHoursFor,
-  liveDailyPace,
-} from '../lib/schedule.js'
+import { activeEntriesOn, activeCerts, remainingHoursFor, liveDailyPace } from '../lib/schedule.js'
 
 const WEEKDAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 
@@ -39,7 +32,7 @@ const SHORT_PROJECT = {
   'gcp-deploy': 'Proy: GCP',
 }
 
-function DayCell({ iso, entries, dayProjects, exam, isSelected, onSelect }) {
+function DayCell({ iso, bookEntries, projectEntries, exam, isSelected, onSelect }) {
   if (!iso) return <td className="cal-cell empty" />
   const today = iso === todayISO()
   const inWindow = iso >= periodStart && iso <= periodEnd
@@ -52,14 +45,14 @@ function DayCell({ iso, entries, dayProjects, exam, isSelected, onSelect }) {
     >
       <div className="cal-daynum">{dayNum}</div>
       <div className="cal-tags">
-        {entries.map(({ book, isCompleted, isOverdue }) => (
+        {bookEntries.map(({ book, isCompleted, isOverdue }) => (
           <span key={book.id} className={`cal-tag cal-book-${book.order}${isCompleted ? ' cal-done' : ''}${isOverdue ? ' cal-overdue' : ''}`}>
             {SHORT_BOOK[book.id] || book.title}
           </span>
         ))}
-        {dayProjects.map((p) => (
-          <span key={p.id} className="cal-tag cal-project">
-            {SHORT_PROJECT[p.id] || p.title}
+        {projectEntries.map(({ project, isCompleted, isOverdue }) => (
+          <span key={project.id} className={`cal-tag cal-project${isCompleted ? ' cal-done' : ''}${isOverdue ? ' cal-overdue' : ''}`}>
+            {SHORT_PROJECT[project.id] || project.title}
           </span>
         ))}
         {exam && <span className="cal-tag cal-exam">🎯 Examen {exam.title.split(' ')[0]}</span>}
@@ -68,7 +61,19 @@ function DayCell({ iso, entries, dayProjects, exam, isSelected, onSelect }) {
   )
 }
 
-function DayDetail({ iso, entries, dayProjects, cts, state, toggleRequirement, markBookCompleted, unmarkBookCompleted, onClose }) {
+function DayDetail({
+  iso,
+  bookEntries,
+  projectEntries,
+  cts,
+  state,
+  toggleRequirement,
+  markBookCompleted,
+  unmarkBookCompleted,
+  markProjectCompleted,
+  unmarkProjectCompleted,
+  onClose,
+}) {
   return (
     <div className="day-detail">
       <div className="day-detail-header">
@@ -76,11 +81,11 @@ function DayDetail({ iso, entries, dayProjects, cts, state, toggleRequirement, m
         <button className="ghost-btn" onClick={onClose}>Cerrar ✕</button>
       </div>
 
-      {entries.length === 0 && dayProjects.length === 0 && cts.length === 0 && (
+      {bookEntries.length === 0 && projectEntries.length === 0 && cts.length === 0 && (
         <p className="muted">No hay nada planeado para este día.</p>
       )}
 
-      {entries.map(({ book, dynEnd, isCompleted, isOverdue }) => {
+      {bookEntries.map(({ book, dynEnd, isCompleted, isOverdue }) => {
         const remaining = remainingHoursFor(book, state.loggedHours)
         const pace = liveDailyPace(remaining, iso, dynEnd)
         return (
@@ -115,27 +120,38 @@ function DayDetail({ iso, entries, dayProjects, cts, state, toggleRequirement, m
         )
       })}
 
-      {dayProjects.map((p) => (
-        <div className="card" key={p.id}>
-          <h3>{p.title}</h3>
-          <p className="muted">{p.objetivo}</p>
-          <ul className="checklist">
-            {p.requirements.map((req, i) => {
-              const key = `${p.id}:${i}`
-              const checked = !!state.checkedRequirements[key]
-              return (
-                <li key={key}>
-                  <label>
-                    <input type="checkbox" checked={checked} onChange={() => toggleRequirement(key)} />
-                    <span className={checked ? 'done' : ''}>{req}</span>
-                  </label>
-                </li>
-              )
-            })}
-          </ul>
-          {p.note && <p className="note">{p.note}</p>}
-        </div>
-      ))}
+      {projectEntries.map(({ project: p, isCompleted, isOverdue }) => {
+        const doneCount = p.requirements.filter((_, i) => state.checkedRequirements[`${p.id}:${i}`]).length
+        return (
+          <div className="card" key={p.id}>
+            <h3>{p.title}</h3>
+            <p className="muted">{p.objetivo}</p>
+            {isOverdue && <p className="note warn">⚠ Atrasado respecto al plan original.</p>}
+            {isCompleted && <p className="note ok">✓ Marcado como completo.</p>}
+            <p className="stat-label">{doneCount}/{p.requirements.length} requisitos cumplidos</p>
+            <ul className="checklist">
+              {p.requirements.map((req, i) => {
+                const key = `${p.id}:${i}`
+                const checked = !!state.checkedRequirements[key]
+                return (
+                  <li key={key}>
+                    <label>
+                      <input type="checkbox" checked={checked} onChange={() => toggleRequirement(key)} />
+                      <span className={checked ? 'done' : ''}>{req}</span>
+                    </label>
+                  </li>
+                )
+              })}
+            </ul>
+            {p.note && <p className="note">{p.note}</p>}
+            {!isCompleted ? (
+              <button className="ghost-btn" onClick={() => markProjectCompleted(p.id, iso)}>✓ Terminé este proyecto este día</button>
+            ) : (
+              <button className="ghost-btn" onClick={() => unmarkProjectCompleted(p.id)}>Deshacer</button>
+            )}
+          </div>
+        )
+      })}
 
       {cts.map((c) => (
         <div className="card" key={c.id}>
@@ -148,19 +164,28 @@ function DayDetail({ iso, entries, dayProjects, cts, state, toggleRequirement, m
   )
 }
 
-export default function Calendar({ dateISO, state, toggleRequirement, markBookCompleted, unmarkBookCompleted }) {
+export default function Calendar({
+  dateISO,
+  state,
+  bookSchedule,
+  projectSchedule,
+  toggleRequirement,
+  markBookCompleted,
+  unmarkBookCompleted,
+  markProjectCompleted,
+  unmarkProjectCompleted,
+}) {
   const [month, setMonth] = useState(monthKey(dateISO))
   const [selected, setSelected] = useState(null)
   const weeks = buildMonthGrid(month)
   const minMonth = monthKey(periodStart)
   const maxMonth = monthKey(periodEnd)
-  const schedule = buildDynamicSchedule(state.completedBooks, dateISO)
 
   return (
     <div className="view">
       <header className="view-header">
         <h1>Calendario</h1>
-        <p className="muted">Hacé clic en un día para ver el detalle y marcar avances. Si terminás un libro antes o después, el resto del calendario se recorre solo.</p>
+        <p className="muted">Hacé clic en un día para ver el detalle y marcar avances. Si terminás un libro o proyecto antes o después, el resto del calendario se recorre solo.</p>
       </header>
 
       <div className="cal-nav">
@@ -185,8 +210,8 @@ export default function Calendar({ dateISO, state, toggleRequirement, markBookCo
                   <DayCell
                     key={iso || `empty-${i}-${j}`}
                     iso={iso}
-                    entries={iso ? activeScheduleEntries(iso, schedule) : []}
-                    dayProjects={iso ? activeProjectsOn(iso, schedule) : []}
+                    bookEntries={iso ? activeEntriesOn(iso, bookSchedule) : []}
+                    projectEntries={iso ? activeEntriesOn(iso, projectSchedule) : []}
                     exam={iso ? certs.find((c) => c.examDate === iso) : null}
                     isSelected={iso === selected}
                     onSelect={setSelected}
@@ -199,7 +224,7 @@ export default function Calendar({ dateISO, state, toggleRequirement, markBookCo
       </div>
 
       <div className="cal-legend">
-        {schedule.map(({ book }) => (
+        {bookSchedule.map(({ book }) => (
           <span key={book.id} className={`cal-tag cal-book-${book.order}`}>{SHORT_BOOK[book.id] || book.title}</span>
         ))}
         <span className="cal-tag cal-project">Proyecto</span>
@@ -209,13 +234,15 @@ export default function Calendar({ dateISO, state, toggleRequirement, markBookCo
       {selected && (
         <DayDetail
           iso={selected}
-          entries={activeScheduleEntries(selected, schedule)}
-          dayProjects={activeProjectsOn(selected, schedule)}
+          bookEntries={activeEntriesOn(selected, bookSchedule)}
+          projectEntries={activeEntriesOn(selected, projectSchedule)}
           cts={activeCerts(selected)}
           state={state}
           toggleRequirement={toggleRequirement}
           markBookCompleted={markBookCompleted}
           unmarkBookCompleted={unmarkBookCompleted}
+          markProjectCompleted={markProjectCompleted}
+          unmarkProjectCompleted={unmarkProjectCompleted}
           onClose={() => setSelected(null)}
         />
       )}

@@ -1,12 +1,6 @@
 import { useState } from 'react'
 import { formatHuman, formatHours, daysInclusive } from '../lib/dates.js'
-import {
-  activeCerts,
-  activeScheduleEntries,
-  activeProjectsOn,
-  remainingHoursFor,
-  liveDailyPace,
-} from '../lib/schedule.js'
+import { activeCerts, activeEntriesOn, remainingHoursFor, liveDailyPace } from '../lib/schedule.js'
 import { periodEnd } from '../data/roadmap.js'
 
 function HoursLogger({ book, remaining, onLog }) {
@@ -38,9 +32,18 @@ function HoursLogger({ book, remaining, onLog }) {
   )
 }
 
-export default function Today({ dateISO, state, schedule, logHours, toggleRequirement, markBookCompleted }) {
-  const entries = activeScheduleEntries(dateISO, schedule)
-  const projs = activeProjectsOn(dateISO, schedule)
+export default function Today({
+  dateISO,
+  state,
+  bookSchedule,
+  projectSchedule,
+  logHours,
+  toggleRequirement,
+  markBookCompleted,
+  markProjectCompleted,
+}) {
+  const bookEntries = activeEntriesOn(dateISO, bookSchedule)
+  const projectEntries = activeEntriesOn(dateISO, projectSchedule)
   const cts = activeCerts(dateISO)
   const daysLeftTotal = daysInclusive(dateISO, periodEnd)
 
@@ -53,8 +56,8 @@ export default function Today({ dateISO, state, schedule, logHours, toggleRequir
 
       <section>
         <h2>Lectura</h2>
-        {entries.length === 0 && <p className="muted">No hay un libro asignado a esta fecha.</p>}
-        {entries.map(({ book, dynEnd, isOverdue, shiftedFromPlan }) => {
+        {bookEntries.length === 0 && <p className="muted">No hay un libro asignado a esta fecha.</p>}
+        {bookEntries.map(({ book, dynEnd, isOverdue, shiftedFromPlan }) => {
           const remaining = remainingHoursFor(book, state.loggedHours)
           const pace = liveDailyPace(remaining, dateISO, dynEnd)
           return (
@@ -93,28 +96,40 @@ export default function Today({ dateISO, state, schedule, logHours, toggleRequir
 
       <section>
         <h2>Proyecto activo</h2>
-        {projs.length === 0 && <p className="muted">No hay proyecto asignado a esta fecha.</p>}
-        {projs.map((p) => (
-          <div className="card" key={p.id}>
-            <h3>{p.title}</h3>
-            <p className="muted">{p.objetivo}</p>
-            <ul className="checklist">
-              {p.requirements.map((req, i) => {
-                const key = `${p.id}:${i}`
-                const checked = !!state.checkedRequirements[key]
-                return (
-                  <li key={key}>
-                    <label>
-                      <input type="checkbox" checked={checked} onChange={() => toggleRequirement(key)} />
-                      <span className={checked ? 'done' : ''}>{req}</span>
-                    </label>
-                  </li>
-                )
-              })}
-            </ul>
-            {p.note && <p className="note">{p.note}</p>}
-          </div>
-        ))}
+        {projectEntries.length === 0 && <p className="muted">No hay proyecto asignado a esta fecha.</p>}
+        {projectEntries.map(({ project: p, isCompleted, isOverdue, shiftedFromPlan }) => {
+          const doneCount = p.requirements.filter((_, i) => state.checkedRequirements[`${p.id}:${i}`]).length
+          return (
+            <div className="card" key={p.id}>
+              <h3>{p.title}</h3>
+              <p className="muted">{p.objetivo}</p>
+              {isCompleted && <p className="note ok">✓ Marcado como completo.</p>}
+              {!isCompleted && isOverdue && <p className="note warn">⚠ Atrasado respecto al plan original.</p>}
+              {!isCompleted && !isOverdue && shiftedFromPlan && <p className="note ok">🟢 Adelantado respecto al plan original.</p>}
+              <p className="stat-label">{doneCount}/{p.requirements.length} requisitos cumplidos</p>
+              <ul className="checklist">
+                {p.requirements.map((req, i) => {
+                  const key = `${p.id}:${i}`
+                  const checked = !!state.checkedRequirements[key]
+                  return (
+                    <li key={key}>
+                      <label>
+                        <input type="checkbox" checked={checked} onChange={() => toggleRequirement(key)} />
+                        <span className={checked ? 'done' : ''}>{req}</span>
+                      </label>
+                    </li>
+                  )
+                })}
+              </ul>
+              {p.note && <p className="note">{p.note}</p>}
+              {!isCompleted && (
+                <button className="ghost-btn" onClick={() => markProjectCompleted(p.id, dateISO)}>
+                  ✓ Terminé este proyecto hoy
+                </button>
+              )}
+            </div>
+          )
+        })}
       </section>
 
       {cts.length > 0 && (

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { formatHuman, formatHours, daysInclusive } from '../lib/dates.js'
-import { remainingHoursFor, plannedDailyPace, buildDynamicSchedule } from '../lib/schedule.js'
+import { remainingHoursFor, plannedDailyPace } from '../lib/schedule.js'
 
 function ProgressInput({ book, currentLogged, onSet }) {
   const [value, setValue] = useState(String(currentLogged || 0))
@@ -30,16 +30,14 @@ function ProgressInput({ book, currentLogged, onSet }) {
   )
 }
 
-export default function Books({ state, dateISO, setHours, markBookCompleted, unmarkBookCompleted }) {
-  const schedule = buildDynamicSchedule(state.completedBooks, dateISO)
-
+export default function Books({ state, dateISO, bookSchedule, setHours, markBookCompleted, unmarkBookCompleted }) {
   return (
     <div className="view">
       <header className="view-header">
         <h1>Libros</h1>
         <p className="muted">9 libros, en orden de lectura. Duraciones verificadas en Audible (ago 2026). Poné cuánto llevás leído para actualizar la barra de progreso.</p>
       </header>
-      {schedule.map(({ book: b, dynStart, dynEnd, isCompleted, isOverdue, shiftedFromPlan }) => {
+      {bookSchedule.map(({ book: b, dynStart, dynEnd, isCompleted, isOverdue, shiftedFromPlan }) => {
         const remaining = remainingHoursFor(b, state.loggedHours)
         const logged = b.hours ? b.hours - remaining : 0
         const progress = b.hours ? Math.min(100, Math.round((logged / b.hours) * 100)) : 0

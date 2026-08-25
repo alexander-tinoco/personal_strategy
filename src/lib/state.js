@@ -3,18 +3,21 @@ import { todayISO } from './dates.js'
 
 const KEY = 'roadmap-2026-state-v1'
 
+const EMPTY = { loggedHours: {}, checkedRequirements: {}, completedBooks: {}, completedProjects: {} }
+
 function load() {
   try {
     const raw = localStorage.getItem(KEY)
-    if (!raw) return { loggedHours: {}, checkedRequirements: {}, completedBooks: {} }
+    if (!raw) return { ...EMPTY }
     const parsed = JSON.parse(raw)
     return {
       loggedHours: parsed.loggedHours || {},
       checkedRequirements: parsed.checkedRequirements || {},
       completedBooks: parsed.completedBooks || {},
+      completedProjects: parsed.completedProjects || {},
     }
   } catch {
-    return { loggedHours: {}, checkedRequirements: {}, completedBooks: {} }
+    return { ...EMPTY }
   }
 }
 
@@ -60,9 +63,8 @@ export function useLocalState() {
     }))
   }
 
-  // Marca un libro como terminado hoy (o en la fecha dada): esto libera los
-  // días sobrantes de su ventana planeada para que el siguiente libro/proyecto
-  // arranque antes.
+  // Marca un libro/proyecto como terminado en la fecha dada: libera (o
+  // extiende) su ventana planeada y corre en consecuencia lo que sigue.
   function markBookCompleted(bookId, dateISO = todayISO()) {
     setState((prev) => ({
       ...prev,
@@ -78,5 +80,29 @@ export function useLocalState() {
     })
   }
 
-  return { state, logHours, setHours, toggleRequirement, markBookCompleted, unmarkBookCompleted }
+  function markProjectCompleted(projectId, dateISO = todayISO()) {
+    setState((prev) => ({
+      ...prev,
+      completedProjects: { ...prev.completedProjects, [projectId]: dateISO },
+    }))
+  }
+
+  function unmarkProjectCompleted(projectId) {
+    setState((prev) => {
+      const next = { ...prev.completedProjects }
+      delete next[projectId]
+      return { ...prev, completedProjects: next }
+    })
+  }
+
+  return {
+    state,
+    logHours,
+    setHours,
+    toggleRequirement,
+    markBookCompleted,
+    unmarkBookCompleted,
+    markProjectCompleted,
+    unmarkProjectCompleted,
+  }
 }
