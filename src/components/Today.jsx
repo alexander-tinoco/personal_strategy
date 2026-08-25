@@ -1,6 +1,12 @@
 import { useState } from 'react'
 import { formatHuman, formatHours, daysInclusive } from '../lib/dates.js'
-import { activeBooks, activeProjects, activeCerts, remainingHoursFor, livePace, projectFor } from '../lib/schedule.js'
+import {
+  activeCerts,
+  activeScheduleEntries,
+  activeProjectsOn,
+  remainingHoursFor,
+  liveDailyPace,
+} from '../lib/schedule.js'
 import { periodEnd } from '../data/roadmap.js'
 
 function HoursLogger({ book, remaining, onLog }) {
@@ -32,9 +38,9 @@ function HoursLogger({ book, remaining, onLog }) {
   )
 }
 
-export default function Today({ dateISO, state, logHours, toggleRequirement }) {
-  const books = activeBooks(dateISO)
-  const projs = activeProjects(dateISO)
+export default function Today({ dateISO, state, schedule, logHours, toggleRequirement, markBookCompleted }) {
+  const entries = activeScheduleEntries(dateISO, schedule)
+  const projs = activeProjectsOn(dateISO, schedule)
   const cts = activeCerts(dateISO)
   const daysLeftTotal = daysInclusive(dateISO, periodEnd)
 
@@ -47,10 +53,10 @@ export default function Today({ dateISO, state, logHours, toggleRequirement }) {
 
       <section>
         <h2>Lectura</h2>
-        {books.length === 0 && <p className="muted">No hay un libro asignado a esta fecha.</p>}
-        {books.map((book) => {
+        {entries.length === 0 && <p className="muted">No hay un libro asignado a esta fecha.</p>}
+        {entries.map(({ book, dynEnd, isOverdue, shiftedFromPlan }) => {
           const remaining = remainingHoursFor(book, state.loggedHours)
-          const pace = livePace(book, dateISO, remaining)
+          const pace = liveDailyPace(remaining, dateISO, dynEnd)
           return (
             <div className="card" key={book.id}>
               <div className="card-title-row">
@@ -58,6 +64,8 @@ export default function Today({ dateISO, state, logHours, toggleRequirement }) {
                 <span className="tag">{book.author}</span>
               </div>
               <p className="muted">{book.why}</p>
+              {isOverdue && <p className="note warn">⚠ Vas atrasado respecto al plan original — el resto del roadmap se corrió en consecuencia.</p>}
+              {!isOverdue && shiftedFromPlan && <p className="note ok">🟢 Vas adelantado respecto al plan original.</p>}
               <div className="stat-row">
                 <div>
                   <span className="stat-value">{formatHours(pace)}</span>
@@ -72,7 +80,12 @@ export default function Today({ dateISO, state, logHours, toggleRequirement }) {
                   <span className="stat-label">total {book.hoursIsRemaining ? '(desde hoy)' : ''}</span>
                 </div>
               </div>
-              <HoursLogger book={book} remaining={remaining} onLog={logHours} />
+              <div className="row-actions">
+                <HoursLogger book={book} remaining={remaining} onLog={logHours} />
+                <button className="ghost-btn" onClick={() => markBookCompleted(book.id, dateISO)}>
+                  ✓ Terminé este libro hoy
+                </button>
+              </div>
             </div>
           )
         })}
