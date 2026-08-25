@@ -22,7 +22,7 @@ export default function HoursLogger({ book, remaining, onLog }) {
         value={value}
         onChange={(e) => setValue(e.target.value)}
       />
-      <button type="submit" disabled={remaining <= 0}>
+      <button type="submit" disabled={remaining != null && remaining <= 0}>
         Registrar
       </button>
     </form>

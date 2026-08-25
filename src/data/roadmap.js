@@ -107,18 +107,19 @@ export const books = [
   },
 ]
 
-// Ritmo diario fijo elegido por el usuario (horas/día). El resto del
-// calendario (fechas de fin de libro/curso, fin de curso estimado) se
-// DERIVA de esto: horas_restantes / ritmo = días que faltan.
-export const dailyBudgets = {
-  reading: 3, // lectura de libros
-  course: 2, // curso de certificación activo
-  dev: 2, // desarrollo del proyecto activo
+// Ritmo diario elegido por el usuario (horas/día), distinto entre semana y
+// sábado (domingo cuenta como día de semana). El resto del calendario
+// (fechas de fin de libro/curso) se DERIVA de esto acumulando el ritmo de
+// cada día hasta cubrir las horas totales — no es una simple división,
+// porque el ritmo cambia el sábado.
+export const dailyBudgetsByDay = {
+  weekday: { reading: 2, course: 2, dev: 1 }, // lunes a viernes + domingo
+  saturday: { reading: 1, course: 1, dev: 1 },
 }
 
 // order: define el orden de la cadena de cursos (GCP -> Databricks -> Docker+K8s,
 // pedido explícito: Google antes que Databricks). hours: estimación total de horas
-// de estudio (junto con dailyBudgets.course define cuántos días le toma a cada uno).
+// de estudio (junto con el ritmo diario de curso define cuántos días le toma a cada uno).
 // Terraform queda sin order/hours: es opcional y no está paceado.
 export const certs = [
   {

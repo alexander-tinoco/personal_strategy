@@ -32,6 +32,10 @@ export function isBetween(dateISO, startISO, endISO) {
   return dateISO >= startISO && dateISO <= endISO
 }
 
+export function isSaturday(iso) {
+  return parseISO(iso).getDay() === 6
+}
+
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
 const MESES = [
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',

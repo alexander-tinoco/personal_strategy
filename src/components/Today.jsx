@@ -1,6 +1,6 @@
 import { formatHuman, formatHours, daysInclusive } from '../lib/dates.js'
-import { activeEntriesOn, remainingHoursFor, todaysTarget } from '../lib/schedule.js'
-import { periodEnd, dailyBudgets } from '../data/roadmap.js'
+import { activeEntriesOn, remainingHoursFor, todaysTarget, getDailyBudget } from '../lib/schedule.js'
+import { periodEnd } from '../data/roadmap.js'
 import HoursLogger from './HoursLogger.jsx'
 
 export default function Today({
@@ -19,12 +19,13 @@ export default function Today({
   const courseEntries = activeEntriesOn(dateISO, courseSchedule)
   const projectEntries = activeEntriesOn(dateISO, projectSchedule)
   const daysLeftTotal = daysInclusive(dateISO, periodEnd)
+  const budget = getDailyBudget(dateISO)
 
   return (
     <div className="view">
       <header className="view-header">
         <h1>Hoy · {formatHuman(dateISO)}</h1>
-        <p className="muted">{daysLeftTotal} días restantes hasta el 31 de diciembre · meta diaria: {dailyBudgets.reading}h lectura + {dailyBudgets.course}h curso + {dailyBudgets.dev}h desarrollo.</p>
+        <p className="muted">{daysLeftTotal} días restantes hasta el 31 de diciembre · meta de hoy: {budget.reading}h lectura + {budget.course}h curso + {budget.dev}h desarrollo.</p>
       </header>
 
       <section>
@@ -32,7 +33,7 @@ export default function Today({
         {bookEntries.length === 0 && <p className="muted">No hay un libro asignado a esta fecha.</p>}
         {bookEntries.map(({ book, isOverdue, isCompleted, isAhead }) => {
           const remaining = remainingHoursFor(book, state.loggedHours)
-          const target = todaysTarget(remaining, dailyBudgets.reading)
+          const target = todaysTarget(remaining, budget.reading)
           return (
             <div className="card" key={book.id}>
               <div className="card-title-row">
@@ -40,7 +41,7 @@ export default function Today({
                 <span className="tag">{book.author}</span>
               </div>
               <p className="muted">{book.why}</p>
-              {isOverdue && <p className="note warn">⚠ Vas atrasado respecto al ritmo de {dailyBudgets.reading}h/día — el resto del roadmap se corrió en consecuencia.</p>}
+              {isOverdue && <p className="note warn">⚠ Vas atrasado respecto al ritmo planeado — el resto del roadmap se corrió en consecuencia.</p>}
               {isCompleted && isAhead && <p className="note ok">🟢 Lo terminaste antes de lo estimado.</p>}
               <div className="stat-row">
                 <div>
@@ -72,12 +73,12 @@ export default function Today({
         {courseEntries.length === 0 && <p className="muted">No hay curso asignado a esta fecha.</p>}
         {courseEntries.map(({ cert, isOverdue, isCompleted, isAhead }) => {
           const remaining = remainingHoursFor(cert, state.loggedHours)
-          const target = todaysTarget(remaining, dailyBudgets.course)
+          const target = todaysTarget(remaining, budget.course)
           return (
             <div className="card" key={cert.id}>
               <h3>{cert.title}</h3>
               <p className="muted">{cert.note}</p>
-              {isOverdue && <p className="note warn">⚠ Vas atrasado respecto al ritmo de {dailyBudgets.course}h/día.</p>}
+              {isOverdue && <p className="note warn">⚠ Vas atrasado respecto al ritmo planeado.</p>}
               {isCompleted && isAhead && <p className="note ok">🟢 Lo terminaste antes de lo estimado.</p>}
               <div className="stat-row">
                 <div>
@@ -105,10 +106,11 @@ export default function Today({
       </section>
 
       <section>
-        <h2>Desarrollo · meta {dailyBudgets.dev}h/día</h2>
+        <h2>Desarrollo · meta {budget.dev}h/día</h2>
         {projectEntries.length === 0 && <p className="muted">No hay proyecto asignado a esta fecha.</p>}
         {projectEntries.map(({ project: p, isCompleted, isOverdue, isAhead }) => {
           const doneCount = p.requirements.filter((_, i) => state.checkedRequirements[`${p.id}:${i}`]).length
+          const invested = state.loggedHours[p.id] || 0
           return (
             <div className="card" key={p.id}>
               <h3>{p.title}</h3>
@@ -116,7 +118,7 @@ export default function Today({
               {isCompleted && <p className="note ok">✓ Marcado como completo.</p>}
               {!isCompleted && isOverdue && <p className="note warn">⚠ Atrasado respecto al plan original.</p>}
               {isCompleted && isAhead && <p className="note ok">🟢 Adelantado respecto al plan original.</p>}
-              <p className="stat-label">{doneCount}/{p.requirements.length} requisitos cumplidos</p>
+              <p className="stat-label">{doneCount}/{p.requirements.length} requisitos cumplidos · {formatHours(invested)} invertidas</p>
               <ul className="checklist">
                 {p.requirements.map((req, i) => {
                   const key = `${p.id}:${i}`
@@ -132,11 +134,14 @@ export default function Today({
                 })}
               </ul>
               {p.note && <p className="note">{p.note}</p>}
-              {!isCompleted && (
-                <button className="ghost-btn" onClick={() => markProjectCompleted(p.id, dateISO)}>
-                  ✓ Terminé este proyecto hoy
-                </button>
-              )}
+              <div className="row-actions">
+                <HoursLogger book={p} remaining={null} onLog={logHours} />
+                {!isCompleted && (
+                  <button className="ghost-btn" onClick={() => markProjectCompleted(p.id, dateISO)}>
+                    ✓ Terminé este proyecto hoy
+                  </button>
+                )}
+              </div>
             </div>
           )
         })}
