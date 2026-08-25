@@ -1,0 +1,177 @@
+:root {
+  --bg: #ffffff;
+  --bg-sidebar: #fbfbfa;
+  --bg-card: #ffffff;
+  --border: #e9e9e7;
+  --text: #37352f;
+  --text-muted: #787774;
+  --accent: #2383e2;
+  --accent-bg: #e7f3fe;
+  --done: #9b9a97;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #191919;
+    --bg-sidebar: #202020;
+    --bg-card: #232323;
+    --border: #2f2f2f;
+    --text: #e9e9e7;
+    --text-muted: #9b9a97;
+    --accent: #4da3ff;
+    --accent-bg: #1b3350;
+    --done: #6f6f6f;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.app {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+  padding: 20px 14px;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.brand h2 { margin: 0 0 2px; font-size: 16px; }
+
+nav { margin-top: 20px; display: flex; flex-direction: column; gap: 2px; }
+
+.nav-item {
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.nav-item:hover { background: var(--border); }
+.nav-item.active { background: var(--accent-bg); color: var(--accent); font-weight: 600; }
+
+.sidebar-footer { margin-top: auto; padding-top: 16px; }
+
+.content {
+  flex: 1;
+  padding: 32px 40px;
+  max-width: 900px;
+  overflow-x: auto;
+}
+
+.view-header { margin-bottom: 24px; }
+.view-header h1 { margin: 0 0 4px; font-size: 24px; }
+
+.muted { color: var(--text-muted); }
+.muted.small { font-size: 12px; }
+
+section { margin-bottom: 32px; }
+section h2 { font-size: 16px; margin-bottom: 10px; }
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+}
+
+.card-title-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.card h3 { margin: 0; font-size: 15px; }
+
+.tag {
+  font-size: 12px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  padding: 2px 8px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.stat-row { display: flex; gap: 24px; margin: 12px 0; flex-wrap: wrap; }
+.stat-row > div { display: flex; flex-direction: column; }
+.stat-value { font-size: 18px; font-weight: 600; }
+.stat-label { font-size: 12px; color: var(--text-muted); }
+
+.progress-bar {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 8px 0;
+}
+.progress-fill { height: 100%; background: var(--accent); }
+
+.checklist { list-style: none; margin: 8px 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.checklist label { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; cursor: pointer; }
+.checklist input { margin-top: 3px; }
+.checklist .done { text-decoration: line-through; color: var(--done); }
+
+.note { font-size: 12px; color: var(--text-muted); font-style: italic; }
+
+.log-form { display: flex; gap: 8px; margin-top: 10px; }
+.log-form input {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 6px 10px;
+  width: 130px;
+  font-size: 13px;
+}
+.log-form button {
+  border: none;
+  background: var(--accent);
+  color: white;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.log-form button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.table-wrap { overflow-x: auto; }
+.calendar-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.calendar-table th {
+  text-align: left;
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+}
+.calendar-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); }
+.calendar-table .month-row td {
+  font-weight: 600;
+  padding-top: 18px;
+  border-bottom: none;
+  color: var(--accent);
+}
+.calendar-table .today-row td { background: var(--accent-bg); font-weight: 600; }
+
+.raw-doc {
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+}
